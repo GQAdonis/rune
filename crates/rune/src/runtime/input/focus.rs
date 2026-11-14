@@ -325,6 +325,13 @@ impl<S: 'static> Runtime<S> {
                 .map(|j| nodes[j].path.clone())
         });
         // `Tx::focus`: the first shown element with the key, or its first focusable child.
+        if std::env::var_os("RUNE_FOCUS_DEBUG").is_some() && let Some((key, ..)) = &asked {
+            for (j, n) in nodes.iter().enumerate().filter(|(_, n)| n.key.as_deref() == Some(key.as_str())) {
+                let chain: Vec<String> = std::iter::successors(Some(j), |&p| nodes[p].parent).map(|p| format!("{}:{}{}", nodes[p].key.as_deref().unwrap_or("?"), nodes[p].vis.opacity, if nodes[p].inert { "!inert" } else { "" })).collect();
+                eprintln!("focus-debug: {key} #{j} shown={} local={}x{} chain {}", shown(j), n.local.w, n.local.h, chain.join(" < "));
+            }
+            if !nodes.iter().any(|n| n.key.as_deref() == Some(key.as_str())) { eprintln!("focus-debug: {key} not in the tree"); }
+        }
         let asked = asked.and_then(|(key, ring, ask)| {
             let anchor = (0..nodes.len()).find(|&j| nodes[j].key.as_deref() == Some(key.as_str()) && shown(j))?;
             (anchor..nodes.len()).take_while(|&j| within(&nodes[j].path, &nodes[anchor].path))
